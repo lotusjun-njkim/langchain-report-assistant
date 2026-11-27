@@ -21,3 +21,12 @@ def list_public_tables() -> list[str]:
             "WHERE table_schema = 'public' ORDER BY table_name"
         )
         return [row[0] for row in cur.fetchall()]
+
+
+def embedding_models() -> list[tuple[str, int]]:
+    """report_embeddings 에 저장된 벡터를 만든 모델 이름과 건수."""
+    with read_only_cursor() as cur:
+        cur.execute(
+            "SELECT model_name, count(*) FROM report_embeddings GROUP BY model_name ORDER BY 2 DESC"
+        )
+        return [(r[0], r[1]) for r in cur.fetchall()]

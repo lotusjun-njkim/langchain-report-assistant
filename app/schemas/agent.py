@@ -1,16 +1,15 @@
-"""Agent 실행부.
+"""POST /api/v1/agent/ask 의 요청·응답 계약."""
+from typing import Literal
 
-지금은 LLM 연결 전 단계라서 질문을 그대로 돌려주는 스텁이다.
-이후 create_agent + Structured Output 으로 이 함수 내부만 교체하면 되고,
-API 계층(app/api/agent.py)은 바뀌지 않는다.
-"""
-from app.schemas.agent import AskRequest, AskResponse
+from pydantic import BaseModel, Field
 
 
-def run_agent(req: AskRequest) -> AskResponse:
-    scope = f" (report_id={req.report_id})" if req.report_id else ""
-    return AskResponse(
-        answer=f"[stub] 질문을 받았습니다: {req.question}{scope}",
-        status="stub",
-        sources=[],
-    )
+class AskRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=2000, description="사용자 질문")
+    report_id: str | None = Field(default=None, description="특정 보고서로 한정할 때 사용")
+
+
+class AskResponse(BaseModel):
+    answer: str
+    status: Literal["ok", "stub", "error"] = "ok"
+    sources: list[str] = Field(default_factory=list, description="근거로 사용한 chunk id")

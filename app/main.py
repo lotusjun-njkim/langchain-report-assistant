@@ -51,24 +51,30 @@ def health() -> dict:
     }
 
 
-def _check_database() -> dict:
-    """DATABASE_URL이 있을 때만 SELECT 1로 확인한다. (읽기 전용)"""
-    if not settings.database_url:
-        return {"name": "database", "ok": False, "detail": "DATABASE_URL 미설정"}
-    try:
-        import psycopg  # requirements: psycopg[binary]
+def _check_database() -> list[dict]:
+    """DB 연결, pgvector 확장, 테이블 수를 읽기 전용으로 확인한다."""
+    from app.db import repository
 
-        with psycopg.connect(settings.database_url, connect_timeout=3) as conn:
-            conn.execute("SELECT 1")
-        return {"name": "database", "ok": True, "detail": "SELECT 1 성공"}
-    except Exception as exc:  # 원인을 그대로 보여줘야 디버깅이 쉽다
-        return {"name": "database", "ok": False, "detail": f"{type(exc).__name__}: {exc}"}
+    checks = []
+    try:
+        ok = repository.ping()
+        checks.append({"name": "database", "ok": ok, "detail": "SELECT 1 성공" if ok else "SELECT 1 실패"})
+    except Exception as exc:
+        return [{"name": "database", "ok": False, "detail": f"{type(exc).__name__}: {exc}"}]
+    try:
+        vec = repository.has_pgvector()
+        checks.append({"name": "pgvector", "ok": vec, "detail": "vector 확장 설치됨" if vec else "vector 확장 없음"})
+        tables = repository.list_public_tables()
+        checks.append({"name": "tables", "ok": True, "detail": f"public 테이블 {len(tables)}개"})
+    except Exception as exc:
+        checks.append({"name": "pgvector", "ok": False, "detail": f"{type(exc).__name__}: {exc}"})
+    return checks
 
 
 @app.get("/health/ready", tags=["health"])
 def ready(response: Response) -> dict:
     """Readiness: 의존성이 준비됐는지 확인한다. 하나라도 실패하면 503."""
-    checks = [_check_database()]
+    checks = _check_database()
     all_ok = all(c["ok"] for c in checks)
     if not all_ok:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE

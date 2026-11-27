@@ -3,6 +3,7 @@
 실행:  uvicorn app.main:app --reload --port 8000
 확인:  GET  /health        -> 서버 생존 확인 (항상 200)
        GET  /health/ready  -> 의존성(DB) 준비 확인 (실패 시 503)
+       POST /api/v1/agent/ask -> 질문 접수 (현재는 stub 응답)
        GET  /docs          -> Swagger UI
 """
 import time
@@ -10,6 +11,7 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI, Response, status
 
+from app.api.agent import router as agent_router
 from app.core.settings import get_settings
 
 settings = get_settings()
@@ -20,6 +22,9 @@ app = FastAPI(
     version=settings.app_version,
     description="LangChain Report Assistant API",
 )
+
+
+app.include_router(agent_router)
 
 
 @app.get("/", tags=["root"])

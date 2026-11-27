@@ -4,6 +4,7 @@ DB 접속은 두 방식 중 하나만 있으면 된다.
   1) DATABASE_URL=postgresql://user:password@host:5432/dbname
   2) DB_HOST / DB_PORT / DB_NAME / DB_USER / DB_PASSWORD  (POSTGRES_*, PG* 이름도 허용)
 """
+import re
 from functools import lru_cache
 from urllib.parse import quote
 
@@ -33,7 +34,8 @@ class Settings(BaseSettings):
     def dsn(self) -> str:
         """DATABASE_URL이 있으면 그대로, 없으면 개별 값으로 조립. 둘 다 없으면 빈 문자열."""
         if self.database_url:
-            return self.database_url
+            # SQLAlchemy 형식(postgresql+psycopg://)을 psycopg가 읽는 형식으로 변환
+            return re.sub(r"^postgres(ql)?\+\w+://", "postgresql://", self.database_url)
         if self.db_host and self.db_name and self.db_user:
             pw = f":{quote(self.db_password, safe='')}" if self.db_password else ""
             return f"postgresql://{quote(self.db_user, safe='')}{pw}@{self.db_host}:{self.db_port}/{self.db_name}"

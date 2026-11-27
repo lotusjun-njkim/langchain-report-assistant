@@ -30,13 +30,8 @@ class Settings(BaseSettings):
     db_user: str = Field("", validation_alias=AliasChoices("DB_USER", "POSTGRES_USER", "PGUSER"))
     db_password: str = Field("", validation_alias=AliasChoices("DB_PASSWORD", "POSTGRES_PASSWORD", "PGPASSWORD"))
 
-    # RAG / 임베딩 (inspect_db.py 결과에 맞춰 .env 에서 덮어쓴다)
-    e5_model_name: str = "intfloat/multilingual-e5-large"
-    rag_table: str = "chunks"
-    rag_id_col: str = "id"
-    rag_text_col: str = "content"
-    rag_vector_col: str = "embedding"
-    rag_report_col: str = ""  # 보고서 ID로 한정 검색할 때 쓰는 컬럼 (없으면 빈 값)
+    # RAG / 임베딩 (report_embeddings.embedding 이 vector(384) 이므로 384차원 모델이어야 한다)
+    e5_model_name: str = "intfloat/multilingual-e5-small"
     rag_top_k: int = 5
 
     @property
